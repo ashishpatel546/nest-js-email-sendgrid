@@ -1,4 +1,4 @@
-# Blink NestJS SendGrid Integration
+# NestJS SendGrid Integration
 
 A robust NestJS module for seamless SendGrid email integration, providing an easy-to-use interface for sending emails using SendGrid's API.
 
@@ -13,7 +13,7 @@ A robust NestJS module for seamless SendGrid email integration, providing an eas
 ## Installation
 
 ```bash
-npm install @blink/nest-js-email-sendgrid
+npm install @sologence/nest-js-email-sendgrid
 ```
 
 ## Quick Start
@@ -21,7 +21,7 @@ npm install @blink/nest-js-email-sendgrid
 1. Import the module in your `app.module.ts`:
 
 ```typescript
-import { SendgridModule } from '@blink/nest-js-email-sendgrid';
+import { SendgridModule } from '@sologence/nest-js-email-sendgrid';
 
 @Module({
   imports: [
@@ -36,7 +36,7 @@ export class AppModule {}
 2. Inject and use the service in your components:
 
 ```typescript
-import { SendgridService } from '@blink/nest-js-email-sendgrid';
+import { SendgridService } from '@sologence/nest-js-email-sendgrid';
 
 @Injectable()
 export class YourService {
@@ -60,6 +60,7 @@ export class YourService {
 ### SendgridService Methods
 
 #### `sendEmailFromTemplate(params: EmailParams)`
+
 Send emails using SendGrid templates.
 
 ```typescript
@@ -74,6 +75,7 @@ await sendgridService.sendEmailFromTemplate({
 ```
 
 #### `sendEmailCustomHtmlBody(params: EmailParams)`
+
 Send emails with custom HTML content.
 
 ```typescript
@@ -86,6 +88,7 @@ await sendgridService.sendEmailCustomHtmlBody({
 ```
 
 #### `sendEmailCustomText(params: EmailParams)`
+
 Send plain text emails.
 
 ```typescript
@@ -99,10 +102,10 @@ await sendgridService.sendEmailCustomText({
 
 ## Configuration Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| apiKey | string | Your SendGrid API key |
-| defaultFrom | string? | Default sender email address |
+| Option      | Type     | Description                  |
+| ----------- | -------- | ---------------------------- |
+| apiKey      | string   | Your SendGrid API key        |
+| defaultFrom | string?  | Default sender email address |
 | sandboxMode | boolean? | Enable SendGrid sandbox mode |
 
 ## Error Handling
