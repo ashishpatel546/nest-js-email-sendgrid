@@ -1,73 +1,211 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# NestJS Authentication Module
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Overview
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This NestJS Authentication Module provides a robust, flexible authentication system with JWT-based authentication, user management, and role-based access control.
 
-## Description
+## Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- JWT-based authentication
+- Currently for SQL database
+- User registration (with multiple roles)
+- User activation by administrators
+- Password management (change and reset)
+- Super admin registration with strict controls
+- Secure password hashing
+- Role-based access control
 
 ## Installation
 
-```bash
-$ npm install
-```
-
-## Running the app
+Install the package using npm:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install @your-org/nestjs-auth-module
 ```
 
-## Test
+## Configuration
 
-```bash
-# unit tests
-$ npm run test
+### Module Setup
 
-# e2e tests
-$ npm run test:e2e
+```typescript
+import { AuthModule } from '@your-org/nestjs-auth-module';
+import { CustomAuthConfigProvider } from './custom-auth-config.provider';
 
-# test coverage
-$ npm run test:cov
+@Module({
+  imports: [
+    AuthModule.forExistingDataSource('default', {
+      provide: 'AUTH_CONFIG_PROVIDER',
+      useClass: CustomAuthConfigProvider
+    })
+  ]
+})
+export class AppModule {}
 ```
 
-## Support
+### Creating a Config Provider
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```typescript
+import { Injectable } from '@nestjs/common';
+import { AuthConfigProvider } from '@your-org/nestjs-auth-module';
 
-## Stay in touch
+@Injectable()
+export class CustomAuthConfigProvider implements AuthConfigProvider {
+  getJwtConfig() {
+    return {
+      secret: process.env.JWT_SECRET,
+      expiresIn: '1h',
+      issuer: 'YourApp'
+    };
+  }
+}
+```
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Usage Examples
+
+### User Registration
+
+```typescript
+@Injectable()
+export class UserService {
+  constructor(private authService: AuthService) {}
+
+  async createUser() {
+    // Register a new user with a specific role
+    const user = await this.authService.registerUser(
+      'user@example.com', 
+      'password123', 
+      USER_ROLE.TECH_ROLE
+    );
+  }
+
+  async createSuperAdmin() {
+    // Register a super admin (only one allowed)
+    const superAdmin = await this.authService.registerSuperAdmin(
+      'admin@example.com', 
+      'securePassword'
+    );
+  }
+}
+```
+
+### User Authentication
+
+```typescript
+@Injectable()
+export class AuthController {
+  constructor(private authService: AuthService) {}
+
+  async login(email: string, password: string) {
+    // Validate user credentials
+    const result = await this.authService.validateUser(email, password);
+    
+    if (result.isValidated) {
+      return {
+        token: result.token,
+        user: result.user
+      };
+    }
+  }
+
+  async validateToken(token: string) {
+    // Validate an existing JWT token
+    const validationResult = await this.authService.validateUserFromJWT(token);
+    return validationResult.isValidated;
+  }
+}
+```
+
+### User Activation
+
+```typescript
+@Injectable()
+export class AdminService {
+  constructor(private authService: AuthService) {}
+
+  async activateNewUser(userEmail: string) {
+    // Activate a user (requires admin credentials)
+    const activatedUser = await this.authService.activateUser(
+      userEmail, 
+      'admin@example.com', 
+      'adminPassword'
+    );
+  }
+}
+```
+
+### Password Management
+
+```typescript
+@Injectable()
+export class UserManagementService {
+  constructor(private authService: AuthService) {}
+
+  async changeUserPassword(token: string) {
+    // Change user's password
+    await this.authService.changePassword(
+      token, 
+      'oldPassword', 
+      'newPassword'
+    );
+  }
+
+  async resetUserPassword(adminToken: string, userEmail: string) {
+    // Super admin can reset user password
+    const resetResult = await this.authService.resetUserPassword(
+      adminToken, 
+      userEmail
+    );
+    
+    if (resetResult.success) {
+      // Send new password to user
+      console.log(resetResult.newPassword);
+    }
+  }
+}
+```
+
+## User Roles
+
+The module supports the following user roles:
+- `SUPER_ADMIN`: Full system access
+- `ADMIN`: Administrative privileges
+- `TECH_ROLE`: Standard user role
+- More roles can be added in the `USER_ROLE` enum
+
+## Security Features
+
+- Passwords are hashed using bcrypt
+- JWT tokens with configurable expiration
+- Role-based access control
+- Only one super admin can be registered
+- Users are inactive by default and require activation
+
+## Error Handling
+
+The module throws specific exceptions:
+- `UnauthorizedException`
+- `ConflictException`
+- `InternalServerErrorException`
+- `NotFoundException`
+
+## Environment Variables
+
+Recommended environment variables:
+- `JWT_SECRET`: Secret key for JWT token generation
+- `JWT_EXPIRES_IN`: Token expiration time
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
 
 ## License
 
-Nest is [MIT licensed](LICENSE).
+[Your License Here]
+
+## Support
+
+For support, please open an issue in the GitHub repository or contact [ashi.patel546@gmail.com].
