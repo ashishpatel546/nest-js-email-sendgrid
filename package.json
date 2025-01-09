@@ -1,12 +1,14 @@
 {
-  "name": "blink-nest-js-email-sendgrid",
+  "name": "nest-js-email-sendgrid",
   "version": "1.0.0",
   "description": "NestJS SendGrid email integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "docs": "typedoc --options typedoc.json",
+    "docs:md": "npm run docs && node scripts/update-docs.js"
   },
   "files": [
     "dist/**/*",
@@ -19,6 +21,14 @@
   ],
   "author": "Ashish Kumar",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ashishpatel546/nest-js-email-sendgrid.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ashishpatel546/nest-js-email-sendgrid/issues"
+  },
+  "homepage": "https://github.com/ashishpatel546/nest-js-email-sendgrid#readme",
   "dependencies": {
     "@sendgrid/mail": "^8.1.4",
     "class-validator": "^0.14.1"
@@ -26,7 +36,9 @@
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
     "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "typescript": "~5.4.0",
+    "typedoc": "^0.25.8",
+    "typedoc-plugin-markdown": "^3.17.1"
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0",

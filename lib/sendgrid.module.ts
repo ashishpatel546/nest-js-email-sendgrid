@@ -5,6 +5,11 @@ import { SENDGRID_OPTIONS } from './sendgrid.constants';
 
 @Module({})
 export class SendgridModule {
+  /**
+   * Register SendGrid module with synchronous options
+   * @param options - SendGrid module configuration options
+   * @returns Dynamic module configuration
+   */
   static register(options: SendgridModuleOptions): DynamicModule {
     return {
       module: SendgridModule,
@@ -19,6 +24,11 @@ export class SendgridModule {
     };
   }
 
+  /**
+   * Register SendGrid module with asynchronous options
+   * @param options - Async options for SendGrid module configuration
+   * @returns Dynamic module configuration
+   */
   static registerAsync(options: SendgridModuleAsyncOptions): DynamicModule {
     return {
       module: SendgridModule,
@@ -31,6 +41,11 @@ export class SendgridModule {
     };
   }
 
+  /**
+   * Creates async options provider
+   * @param options - Async options for SendGrid module
+   * @returns Provider configuration
+   */
   private static createAsyncOptionsProvider(
     options: SendgridModuleAsyncOptions,
   ): Provider {
