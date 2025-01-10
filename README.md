@@ -100,6 +100,40 @@ await sendgridService.sendEmailCustomText({
 });
 ```
 
+### Sending Emails with S3 Attachments
+
+The module now supports sending emails with attachments directly from S3 URLs using Nodemailer transport:
+
+```typescript
+// Inject the service
+constructor(private readonly sendgridService: SendgridService) {}
+
+// Send email with S3 attachment
+await this.sendgridService.sendEmailWithS3Attachment({
+  to: 'recipient@example.com',
+  from: 'sender@example.com', // optional if defaultFromEmail is set
+  subject: 'Document Attached',
+  text: 'Please find the attached document',
+  url: 'https://your-bucket.s3.amazonaws.com/path/to/file',
+  fileName: 'document.pdf' // optional, defaults to 'attachment'
+});
+```
+
+#### S3 Attachment Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| to | string \| string[] | Yes | Recipient email address(es) |
+| from | string | No | Sender email address (falls back to defaultFromEmail) |
+| subject | string | Yes | Email subject |
+| text | string | Yes | Email body text |
+| url | string | Yes | Full URL to the S3 file |
+| fileName | string | No | Custom filename for the attachment |
+
+#### Response
+
+The method returns a Promise that resolves to the Nodemailer send result object.
+
 ## Configuration Options
 
 | Option      | Type     | Description                  |
