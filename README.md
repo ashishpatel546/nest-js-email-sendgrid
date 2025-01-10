@@ -18,15 +18,40 @@ npm install @sologence/nest-js-email-sendgrid
 
 ## Quick Start
 
-1. Import the module in your `app.module.ts`:
+1. Import the module in your `app.module.ts`. You can use either synchronous registration or async registration:
+
+### Synchronous Registration
 
 ```typescript
 import { SendgridModule } from '@sologence/nest-js-email-sendgrid';
 
 @Module({
   imports: [
-    SendgridModule.forRoot({
+    SendgridModule.register({
       apiKey: 'YOUR_SENDGRID_API_KEY',
+      defaultFromEmail: 'your@email.com',
+      isGlobal: true, // optional, defaults to false
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Asynchronous Registration
+
+```typescript
+import { SendgridModule } from '@sologence/nest-js-email-sendgrid';
+
+@Module({
+  imports: [
+    SendgridModule.registerAsync({
+      imports: [ConfigModule], // optional: import modules that are needed for config
+      useFactory: async (configService: ConfigService) => ({
+        apiKey: configService.get('SENDGRID_API_KEY'),
+        defaultFromEmail: configService.get('SENDGRID_FROM_EMAIL'),
+        isGlobal: true, // optional, defaults to false
+      }),
+      inject: [ConfigService], // optional: services to inject into useFactory
     }),
   ],
 })
