@@ -29,10 +29,10 @@ export class SendgridModule {
       imports: options.imports || [],
       providers: [
         ...this.createAsyncProviders(options),
-        // SendgridService,
+        SendgridService,
       ],
-      exports: [],
-      // exports: [SendgridService],
+      // exports: [],
+      exports: [SendgridService],
     };
   }
 
