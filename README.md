@@ -9,6 +9,7 @@ A robust NestJS module for seamless SendGrid email integration, providing an eas
 - 🎨 Custom HTML and plain text emails
 - ⚡ Type-safe email parameters
 - 🔒 Secure API key configuration
+- 🎭 Email masking support for secure logging
 
 ## Installation
 
@@ -168,6 +169,7 @@ The method returns a Promise that resolves to the Nodemailer send result object.
 | apiKey      | string   | Your SendGrid API key        |
 | defaultFrom | string?  | Default sender email address |
 | sandboxMode | boolean? | Enable SendGrid sandbox mode |
+| masking     | boolean? | Enable email masking in logs |
 
 ## Error Handling
 
