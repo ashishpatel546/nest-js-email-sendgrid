@@ -31,6 +31,7 @@ import { SendgridModule } from '@sologence/nest-js-email-sendgrid';
       apiKey: 'YOUR_SENDGRID_API_KEY',
       defaultFromEmail: 'your@email.com',
       isGlobal: true, // optional, defaults to false
+      masking: true //to enable masking while logging the email default false
     }),
   ],
 })
@@ -50,6 +51,7 @@ import { SendgridModule } from '@sologence/nest-js-email-sendgrid';
         apiKey: configService.get('SENDGRID_API_KEY'),
         defaultFromEmail: configService.get('SENDGRID_FROM_EMAIL'),
         isGlobal: true, // optional, defaults to false
+        masking: true //to enable masking while logging the email default false
       }),
       inject: [ConfigService], // optional: services to inject into useFactory
     }),

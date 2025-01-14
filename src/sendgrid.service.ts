@@ -5,6 +5,7 @@ import { checkValidEmailList } from './utils/email-validator.util';
 import { SENDGRID_OPTIONS } from './sendgrid.constants';
 import * as https from 'https';
 import { createTransport, Transporter } from 'nodemailer';
+import { maskEmailList } from './utils/email-masking.util';
 
 @Injectable()
 export class SendgridService implements OnModuleInit {
@@ -12,10 +13,13 @@ export class SendgridService implements OnModuleInit {
   private sgService: MailService;
   private nodemailerTransport: Transporter;
   private fromEmail: string;
+  /** Flag to control email masking in logs for privacy */
+  private readonly masking: boolean = this.options.masking === true;
 
   /**
    * Creates an instance of SendgridService
    * @param options - Configuration options for SendGrid service
+   *                 Including apiKey, defaultFromEmail, and optional masking flag
    */
   constructor(@Inject(SENDGRID_OPTIONS) private readonly options: SendgridModuleOptions) {
     this.fromEmail = options.defaultFromEmail;
@@ -118,7 +122,8 @@ export class SendgridService implements OnModuleInit {
    * @throws {BadRequestException} if email addresses are invalid
    */
   async sendEmailFromTemplate(params: EmailParams) {
-    this.logger.log(`Sending template email to: ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+    // Initial log uses masked emails when masking is enabled
+    this.logger.log(`Sending template email to: ${maskEmailList(Array.isArray(params.to) ? params.to : [params.to], this.masking).join(', ')}`);
     const msg: MailDataRequired = {
       to: params.to,
       from: params.from || this.fromEmail,
@@ -141,7 +146,7 @@ export class SendgridService implements OnModuleInit {
     try {
       this.logger.debug('Attempting to send email via SendGrid');
       await this.sgService.send(msg);
-      this.logger.log(`Email sent successfully to: ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+      this.logger.log(`Email sent successfully to: ${maskEmailList(params.to, this.masking).join(', ')}`);
       return 'success';
     } catch (error) {
       this.logger.error(`Failed to send email: ${error.message}`, error.stack);
@@ -157,7 +162,8 @@ export class SendgridService implements OnModuleInit {
    * @throws {BadRequestException} if email addresses are invalid
    */
   async sendEmailCustomHtmlBody(params: EmailParams) {
-    this.logger.log(`Sending HTML email to: ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+    // Initial log uses masked emails when masking is enabled
+    this.logger.log(`Sending HTML email to: ${maskEmailList(Array.isArray(params.to) ? params.to : [params.to], this.masking).join(', ')}`);
     const msg: MailDataRequired = {
       to: params.to,
       from: params.from || this.fromEmail,
@@ -179,7 +185,7 @@ export class SendgridService implements OnModuleInit {
     try {
       this.logger.debug('Attempting to send HTML email via SendGrid');
       await this.sgService.send(msg);
-      this.logger.log(`HTML email sent successfully to: ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+      this.logger.log(`Email sent successfully to: ${maskEmailList(params.to, this.masking).join(', ')}`);
       return 'success';
     } catch (error) {
       this.logger.error(`Failed to send HTML email: ${error.message}`, error.stack);
@@ -195,7 +201,8 @@ export class SendgridService implements OnModuleInit {
    * @throws {BadRequestException} if email addresses are invalid
    */
   async sendEmailCustomText(params: EmailParams) {
-    this.logger.log(`Sending text email to: ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+    // Initial log uses masked emails when masking is enabled
+    this.logger.log(`Sending text email to: ${maskEmailList(Array.isArray(params.to) ? params.to : [params.to], this.masking).join(', ')}`);
     const msg: MailDataRequired = {
       to: params.to,
       from: params.from || this.fromEmail,
@@ -217,7 +224,7 @@ export class SendgridService implements OnModuleInit {
     try {
       this.logger.debug('Attempting to send text email via SendGrid');
       await this.sgService.send(msg);
-      this.logger.log(`Text email sent successfully to: ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+      this.logger.log(`Email sent successfully to: ${maskEmailList(params.to, this.masking).join(', ')}`);
       return 'success';
     } catch (error) {
       this.logger.error(`Failed to send text email: ${error.message}`, error.stack);
@@ -232,7 +239,8 @@ export class SendgridService implements OnModuleInit {
    * @returns Promise resolving to the sent message info
    */
   async sendEmailWithS3Attachment(params: EmailParams) {
-    this.logger.log(`Sending email with S3 attachment to: ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+    // Initial log uses masked emails when masking is enabled
+    this.logger.log(`Sending email with S3 attachment to: ${maskEmailList(Array.isArray(params.to) ? params.to : [params.to], this.masking).join(', ')}`);
     
     try {
       const mailOptions = {

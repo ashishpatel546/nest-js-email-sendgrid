@@ -1,8 +1,17 @@
 import { ModuleMetadata, Provider, Type } from '@nestjs/common';
 
+/**
+ * Configuration options for SendGrid Module
+ * @interface SendgridModuleOptions
+ * @property {string} apiKey - SendGrid API key
+ * @property {string} defaultFromEmail - Default sender email address
+ * @property {boolean} [masking=false] - Enable/disable email masking in logs for privacy
+ * @property {boolean} [isGlobal=false] - Make the module global (available throughout the application)
+ */
 export interface SendgridModuleOptions {
   apiKey: string;
   defaultFromEmail: string;
+  masking?: boolean;
   isGlobal?: boolean;
 }
 
