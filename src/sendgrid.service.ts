@@ -255,7 +255,7 @@ export class SendgridService implements OnModuleInit {
       };
 
       const result = await this.nodemailerTransport.sendMail(mailOptions);
-      this.logger.log(`Email with S3 attachment sent successfully to: ${Array.isArray(params.to) ? params.to.join(', ') : params.to}`);
+      this.logger.log(`Email with S3 attachment sent successfully to: ${maskEmailList(Array.isArray(params.to) ? params.to : [params.to], this.masking).join(', ')}`);
       return result;
     } catch (error) {
       this.logger.error(`Failed to send email with S3 attachment: ${error.message}`);

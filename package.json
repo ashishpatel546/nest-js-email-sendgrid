@@ -1,6 +1,6 @@
 {
   "name": "@sologence/nest-js-email-sendgrid",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "NestJS SendGrid email integration",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
