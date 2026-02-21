@@ -307,6 +307,80 @@ try {
 }
 ```
 
+## Migration Guide
+
+### v2.0.x → v2.1.0
+
+**No breaking changes.** This is a backward-compatible feature release. All existing code continues to work without modification.
+
+**New capabilities added:**
+
+#### 1. `attachments[].content` now accepts `Buffer`
+
+Previously only a base64 string was accepted. You can now pass a raw `Buffer` and the package converts it internally.
+
+```typescript
+// Before (v2.0.x) — manual conversion required
+attachments: [{
+  content: file.buffer.toString('base64'),  // ← had to do this yourself
+  filename: file.originalname,
+  type: file.mimetype,
+}]
+
+// After (v2.1.0) — pass Buffer directly
+attachments: [{
+  content: file.buffer,  // ← Buffer now accepted natively
+  filename: file.originalname,
+  type: file.mimetype,
+}]
+```
+
+#### 2. New method: `sendEmailUsingFileAttachment()`
+
+A dedicated method for attachment-first email flows. If you were using `sendEmailFromTemplate` to send file attachments, consider migrating to this method for clearer intent and upfront validation.
+
+```typescript
+// Before (v2.0.x)
+await sendgridService.sendEmailFromTemplate({
+  to: 'user@example.com',
+  subject: 'Doc',
+  template: 'd-xxx',
+  attachments: [{ content: file.buffer.toString('base64'), filename: 'doc.pdf', type: 'application/pdf' }],
+});
+
+// After (v2.1.0) — recommended when attachment is the primary purpose
+await sendgridService.sendEmailUsingFileAttachment({
+  to: 'user@example.com',
+  subject: 'Doc',
+  template: 'd-xxx',
+  attachments: [{ content: file.buffer, filename: 'doc.pdf', type: 'application/pdf' }],
+});
+```
+
+> `sendEmailFromTemplate()` still works and still accepts attachments — migrating to `sendEmailUsingFileAttachment()` is recommended but not required.
+
+---
+
+### v1.x → v2.x
+
+**Contains breaking changes.**
+
+#### `sendEmailWithS3Attachment` renamed to `sendEmailWithUrlAttachment`
+
+The method was renamed to reflect that it supports any public URL (S3, GCS, Azure Blob, CDN), not just AWS S3.
+
+```typescript
+// Before (v1.x)
+await sendgridService.sendEmailWithS3Attachment({ ... });
+
+// After (v2.x)
+await sendgridService.sendEmailWithUrlAttachment({ ... });
+```
+
+The parameters and return value are identical — only the method name changed.
+
+---
+
 ## Contributing
 
 We welcome contributions! Please feel free to submit a Pull Request.
