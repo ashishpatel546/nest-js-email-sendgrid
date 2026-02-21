@@ -309,9 +309,11 @@ try {
 
 ## Migration Guide
 
-### v2.0.x → v2.1.0
+### v2.0.x → v2.1.x
 
 **No breaking changes.** This is a backward-compatible feature release. All existing code continues to work without modification.
+
+> `v2.1.1` is a documentation-only patch — no code changes from `v2.1.0`.
 
 **New capabilities added:**
 
@@ -321,18 +323,22 @@ Previously only a base64 string was accepted. You can now pass a raw `Buffer` an
 
 ```typescript
 // Before (v2.0.x) — manual conversion required
-attachments: [{
-  content: file.buffer.toString('base64'),  // ← had to do this yourself
-  filename: file.originalname,
-  type: file.mimetype,
-}]
+attachments: [
+  {
+    content: file.buffer.toString('base64'), // ← had to do this yourself
+    filename: file.originalname,
+    type: file.mimetype,
+  },
+];
 
 // After (v2.1.0) — pass Buffer directly
-attachments: [{
-  content: file.buffer,  // ← Buffer now accepted natively
-  filename: file.originalname,
-  type: file.mimetype,
-}]
+attachments: [
+  {
+    content: file.buffer, // ← Buffer now accepted natively
+    filename: file.originalname,
+    type: file.mimetype,
+  },
+];
 ```
 
 #### 2. New method: `sendEmailUsingFileAttachment()`
@@ -345,7 +351,13 @@ await sendgridService.sendEmailFromTemplate({
   to: 'user@example.com',
   subject: 'Doc',
   template: 'd-xxx',
-  attachments: [{ content: file.buffer.toString('base64'), filename: 'doc.pdf', type: 'application/pdf' }],
+  attachments: [
+    {
+      content: file.buffer.toString('base64'),
+      filename: 'doc.pdf',
+      type: 'application/pdf',
+    },
+  ],
 });
 
 // After (v2.1.0) — recommended when attachment is the primary purpose
@@ -353,7 +365,9 @@ await sendgridService.sendEmailUsingFileAttachment({
   to: 'user@example.com',
   subject: 'Doc',
   template: 'd-xxx',
-  attachments: [{ content: file.buffer, filename: 'doc.pdf', type: 'application/pdf' }],
+  attachments: [
+    { content: file.buffer, filename: 'doc.pdf', type: 'application/pdf' },
+  ],
 });
 ```
 
