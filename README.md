@@ -10,6 +10,8 @@ A robust NestJS module for seamless SendGrid email integration, providing an eas
 - ⚡ Type-safe email parameters
 - 🔒 Secure API key configuration
 - 🎭 Email masking support for secure logging
+- 📎 URL-based attachments from any public cloud storage (AWS S3, Google Cloud Storage, Azure Blob, CDN links)
+- 📂 File buffer attachments — send in-memory files (e.g. Multer uploads) directly as email attachments without writing to disk
 
 ## Installation
 
@@ -32,7 +34,7 @@ import { SendgridModule } from '@sologence/nest-js-email-sendgrid';
       apiKey: 'YOUR_SENDGRID_API_KEY',
       defaultFromEmail: 'your@email.com',
       isGlobal: true, // optional, defaults to false
-      masking: true //to enable masking while logging the email default false
+      masking: true, //to enable masking while logging the email default false
     }),
   ],
 })
@@ -52,7 +54,7 @@ import { SendgridModule } from '@sologence/nest-js-email-sendgrid';
         apiKey: configService.get('SENDGRID_API_KEY'),
         defaultFromEmail: configService.get('SENDGRID_FROM_EMAIL'),
         isGlobal: true, // optional, defaults to false
-        masking: true //to enable masking while logging the email default false
+        masking: true, //to enable masking while logging the email default false
       }),
       inject: [ConfigService], // optional: services to inject into useFactory
     }),
@@ -89,22 +91,136 @@ export class YourService {
 
 #### `sendEmailFromTemplate(params: EmailParams)`
 
-Send emails using SendGrid templates.
+Send emails using a SendGrid dynamic template. Attachments are **optional** — you can include them via the `attachments` array (base64 string or Buffer) or a public `url`, but they are not required.
 
 ```typescript
+// Without attachments
 await sendgridService.sendEmailFromTemplate({
   to: 'recipient@example.com',
-  from: 'sender@example.com',
-  templateId: 'template-id',
-  dynamicTemplateData: {
-    // Your template variables
+  from: 'sender@example.com', // optional if defaultFromEmail is set
+  subject: 'Welcome!',
+  template: 'd-your-template-id',
+  data: {
+    name: 'John Doe',
   },
+});
+
+// With optional file attachment (base64 string or Buffer both accepted)
+await sendgridService.sendEmailFromTemplate({
+  to: 'recipient@example.com',
+  subject: 'Welcome with attachment',
+  template: 'd-your-template-id',
+  data: { name: 'John Doe' },
+  attachments: [
+    {
+      content: file.buffer, // Buffer or base64 string
+      filename: file.originalname,
+      type: file.mimetype,
+    },
+  ],
 });
 ```
 
+#### `sendEmailUsingFileAttachment(params: EmailParams)`
+
+Dedicated method for sending emails where **one or more file attachments are required**. Throws a `BadRequestException` immediately if no attachments are provided.
+
+This is the recommended method when your backend receives a file upload (e.g. via Multer/Swagger) and needs to forward it as an email attachment, because:
+
+- It makes the attachment intent explicit in your code
+- It validates attachment presence upfront
+- It accepts `Buffer` directly — no manual base64 conversion needed
+
+**Supported attachment content formats:**
+
+| Format          | Example                                    | Notes                               |
+| --------------- | ------------------------------------------ | ----------------------------------- |
+| `Buffer`        | `file.buffer` (Multer)                     | Auto-converted to base64 internally |
+| `base64 string` | `fs.readFileSync(path).toString('base64')` | Used as-is                          |
+
+**Supported email body types** (provide one):
+
+| Body type         | Param               | Notes                           |
+| ----------------- | ------------------- | ------------------------------- |
+| SendGrid template | `template` + `data` | Dynamic template with variables |
+| Custom HTML       | `html`              | Raw HTML string                 |
+| Plain text        | `text`              | Plain text string               |
+
+```typescript
+// From a Multer file upload (e.g. via Swagger @ApiConsumes('multipart/form-data'))
+@Post('send-with-file')
+@UseInterceptors(FileInterceptor('file'))
+async sendWithFile(@UploadedFile() file: Express.Multer.File) {
+  await this.sendgridService.sendEmailUsingFileAttachment({
+    to: 'recipient@example.com',
+    subject: 'Your uploaded document',
+    template: 'd-your-template-id',     // SendGrid template
+    data: { name: 'John' },
+    attachments: [{
+      content: file.buffer,             // Buffer — auto-converted to base64 internally
+      filename: file.originalname,
+      type: file.mimetype,
+    }],
+  });
+}
+
+// With custom HTML body instead of a template
+await sendgridService.sendEmailUsingFileAttachment({
+  to: 'recipient@example.com',
+  subject: 'Invoice attached',
+  html: '<h1>Please find your invoice attached.</h1>',
+  attachments: [{
+    content: file.buffer,
+    filename: 'invoice.pdf',
+    type: 'application/pdf',
+  }],
+});
+
+// Multiple attachments
+await sendgridService.sendEmailUsingFileAttachment({
+  to: ['user1@example.com', 'user2@example.com'],
+  subject: 'Reports',
+  text: 'Monthly reports attached.',
+  attachments: [
+    { content: report1Buffer, filename: 'report1.pdf', type: 'application/pdf' },
+    { content: report2Buffer, filename: 'report2.xlsx', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+  ],
+});
+```
+
+##### Parameters
+
+| Parameter     | Type                  | Required | Description                                       |
+| ------------- | --------------------- | -------- | ------------------------------------------------- |
+| `to`          | `string \| string[]`  | Yes      | Recipient email address(es)                       |
+| `from`        | `string`              | No       | Sender address (falls back to `defaultFromEmail`) |
+| `subject`     | `string`              | Yes      | Email subject                                     |
+| `attachments` | `Attachment[]`        | **Yes**  | At least one attachment required                  |
+| `template`    | `string`              | No\*     | SendGrid template ID                              |
+| `data`        | `Record<string, any>` | No       | Dynamic template variables                        |
+| `html`        | `string`              | No\*     | Custom HTML body                                  |
+| `text`        | `string`              | No\*     | Plain text body                                   |
+
+\* Provide one of `template`, `html`, or `text` as the email body.
+
+##### Attachment Object
+
+| Property      | Type               | Required | Description                                           |
+| ------------- | ------------------ | -------- | ----------------------------------------------------- |
+| `content`     | `Buffer \| string` | Yes      | Raw Buffer (e.g. `file.buffer`) or base64 string      |
+| `filename`    | `string`           | Yes      | Attachment file name (e.g. `file.originalname`)       |
+| `type`        | `string`           | Yes      | MIME type (e.g. `file.mimetype`, `'application/pdf'`) |
+| `disposition` | `string`           | No       | `'attachment'` (default) or `'inline'`                |
+| `contentId`   | `string`           | No       | Content ID for inline attachments                     |
+
+> **Choosing between `sendEmailFromTemplate` and `sendEmailUsingFileAttachment`:**
+>
+> - Use `sendEmailFromTemplate` when the email body is the primary concern and attachments are incidental/optional.
+> - Use `sendEmailUsingFileAttachment` when the file attachment is the primary concern (e.g. forwarding an uploaded file). It enforces that attachments are present and accepts `Buffer` from in-memory uploads directly.
+
 #### `sendEmailCustomHtmlBody(params: EmailParams)`
 
-Send emails with custom HTML content.
+Send emails with custom HTML content. Attachments are optional.
 
 ```typescript
 await sendgridService.sendEmailCustomHtmlBody({
@@ -117,7 +233,7 @@ await sendgridService.sendEmailCustomHtmlBody({
 
 #### `sendEmailCustomText(params: EmailParams)`
 
-Send plain text emails.
+Send plain text emails. Attachments are optional.
 
 ```typescript
 await sendgridService.sendEmailCustomText({
@@ -128,35 +244,40 @@ await sendgridService.sendEmailCustomText({
 });
 ```
 
-### Sending Emails with S3 Attachments
+### Sending Emails with URL Attachments
 
-The module now supports sending emails with attachments directly from S3 URLs using Nodemailer transport:
+> **⚠ Breaking Change (v2.x):** The method `sendEmailWithS3Attachment` has been renamed to
+> `sendEmailWithUrlAttachment` to better reflect its capability. It supports **any publicly
+> accessible URL** — AWS S3, Google Cloud Storage, Azure Blob Storage, CDN links, or any
+> direct HTTPS file link. Please update all existing usages of `sendEmailWithS3Attachment`.
+
+The module supports sending emails with attachments fetched directly from any public URL using Nodemailer transport:
 
 ```typescript
 // Inject the service
 constructor(private readonly sendgridService: SendgridService) {}
 
-// Send email with S3 attachment
-await this.sendgridService.sendEmailWithS3Attachment({
+// Send email with a URL-based attachment (S3, GCS, Azure, CDN, etc.)
+await this.sendgridService.sendEmailWithUrlAttachment({
   to: 'recipient@example.com',
   from: 'sender@example.com', // optional if defaultFromEmail is set
   subject: 'Document Attached',
   text: 'Please find the attached document',
-  url: 'https://your-bucket.s3.amazonaws.com/path/to/file',
+  url: 'https://your-bucket.s3.amazonaws.com/path/to/file', // or any public URL
   fileName: 'document.pdf' // optional, defaults to 'attachment'
 });
 ```
 
-#### S3 Attachment Parameters
+#### URL Attachment Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| to | string \| string[] | Yes | Recipient email address(es) |
-| from | string | No | Sender email address (falls back to defaultFromEmail) |
-| subject | string | Yes | Email subject |
-| text | string | Yes | Email body text |
-| url | string | Yes | Full URL to the S3 file |
-| fileName | string | No | Custom filename for the attachment |
+| Parameter | Type               | Required | Description                                             |
+| --------- | ------------------ | -------- | ------------------------------------------------------- |
+| to        | string \| string[] | Yes      | Recipient email address(es)                             |
+| from      | string             | No       | Sender email address (falls back to defaultFromEmail)   |
+| subject   | string             | Yes      | Email subject                                           |
+| text      | string             | Yes      | Email body text                                         |
+| url       | string             | Yes      | Full public URL to the file (S3, GCS, Azure, CDN, etc.) |
+| fileName  | string             | No       | Custom filename for the attachment                      |
 
 #### Response
 
